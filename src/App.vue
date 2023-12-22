@@ -1,46 +1,64 @@
 <script setup lang="ts">
+
 //import required libraries
 import { ref } from 'vue'
 import axios from 'axios'
 
-//Reference to sample size value
+//Reference to sample size input
 const sampleSize = ref();
+//Boolean to control showing the sample size validation error
 const showSampleSizeValidationError = ref(false);
 
-//Reference to sample mean value
+//Reference to sample mean input
 const sampleMean = ref();
+//Boolean to control showing the sample mean validation error
 const showSampleMeanValidationError = ref(false);
 
-//Reference to standard dev value
+//Reference to standard dev input
 const standardDev = ref();
+//Boolean to control showing the standard deviation validation error
 const showStandardDevValidationError = ref(false);
 
-//Hypothesis Test Checkbox Status
+//Reference to the Hypothesis Test Checkbox
 const performHypothesisTest = ref(false);
+
+//Reference to the hypothesized mean input
 const hypothesizedMean = ref();
+//Boolean to control showing the sample size validation error
 const showHypothesizedMeanValidationError = ref(false);
 
-//show modal boolean for showing the results table
+//show modal boolean for showing the results modal
 const showResultsModal = ref(false);
 
 //boolean to control showing the presets error message
 const showPresetsError = ref(false);
 
-//Fetch and load preset values into the form
+//Fetch and load preset values into the forms
 requestPresets();
 
-//Functions start here
+//Form Functions
+
 //Request presets from the server
-function requestPresets()
+//this is async for the unit tests
+async function requestPresets()
 {
   //Request preset values from server
   //Mock AJAX call using the axios library 
-  axios.get('http://localhost:5173/src/assets/mock_response.json').then(loadPresets).catch(getPresetsFailure);
-
+  try
+  {
+    let response = await axios.get('http://localhost:5173/src/assets/mock_response.json')
+    
+    //load the response data into the form
+    loadPresets(response);
+  }
+  catch(e)
+  {
+    getPresetsFailure(e);
+  }
 }
 
 //Set form values equal to presets if present
-function loadPresets(response)
+function loadPresets(response: {data:{sample_size?:number, sample_mean?:number, standard_deviation?:number}})
 {
   sampleSize.value = response.data.sample_size || "";
 
@@ -49,44 +67,50 @@ function loadPresets(response)
   standardDev.value = response.data.standard_deviation || "";
 }
 
-function getPresetsFailure()
+//error handler for requesting presets
+function getPresetsFailure(e:any)
 {
+  //log the error
+  console.log(e);
+  //show the error message in the UI
   showPresetsError.value = true;
 }
 
-
-
+//Validates the inputs before calling the submit function
 function validate()
 {
   //boolean to track if all validation passed or not.
   //We want to perform all validation and show all relevant error messages for better UX
   var validationPassed = true;
 
+  //clear any existing error messages
   resetValidationErrorMessages();
 
-  //Sample Size must be present, be greater than or equal to 2, and must be an integer. 
-  //Note: isInteger will determine if the value is numerical or not, no need to add an additional check
-  if(!sampleSize.value || sampleSize.value <= 2 || !Number.isInteger(parseFloat(sampleSize.value)))
+  //Sample Size must be present, be greater than or equal to 2, and must be an integer.
+  if(!sampleSize.value || sampleSize.value <= 2 || typeof sampleSize.value !== 'number' || !Number.isInteger(sampleSize.value))
   {
     validationPassed = false;
     showSampleSizeValidationError.value = true;
   }
 
   //Sample Mean must be present and must be a number
-  if(!sampleMean.value || typeof sampleMean.value !== 'number')
+  //Extra check here because a value of 0 will trigger a false positive
+  if((!sampleMean.value && sampleMean.value !== 0) || typeof sampleMean.value !== 'number')
   {
     validationPassed = false;
     showSampleMeanValidationError.value = true;
   }
 
   //Standard Dev must be present, must be numerical, and must be greater than 0
-  if(!standardDev.value || typeof standardDev.value !== 'number' || standardDev.value <= 0)
+  if(!standardDev.value || typeof standardDev.value !== 'number' || standardDev.value < 0)
   {
     validationPassed = false;
     showStandardDevValidationError.value = true;
   }
 
-  if(performHypothesisTest.value && (!hypothesizedMean.value || typeof hypothesizedMean.value !== 'number'))
+  //if the perform hypothesis test checkbox is checked, then make sure the hypo mean is entered and is a number
+  //Extra check here because a value of 0 will trigger a false positive
+  if(performHypothesisTest.value && ((!hypothesizedMean.value && hypothesizedMean.value !==0) || typeof hypothesizedMean.value !== 'number'))
   {
     validationPassed = false;
     showHypothesizedMeanValidationError.value = true;
@@ -97,7 +121,6 @@ function validate()
   {
     submit();
   }
-
 }
 
 //Reset all validation error messages
@@ -108,15 +131,14 @@ function resetValidationErrorMessages()
   showStandardDevValidationError.value      = false;
   showHypothesizedMeanValidationError.value = false;
 }
-
-//TODO: submit function 
+//Submit function that enabled the results modal window
 function submit()
 {
   showResultsModal.value = true;
 }
 
-//close the modal
-function closeModal()
+//close the results modal
+function closeResultsModal()
 {
   showResultsModal.value = false;
 }
@@ -124,7 +146,6 @@ function closeModal()
 //reset the form to default values
 function reset()
 {
-
   //re-request the presets. 
   //they are not cached in the browser and could have potentially changed on the server side since last request
   requestPresets();
@@ -135,7 +156,6 @@ function reset()
 
   //reset any validation error messages that are showing
   resetValidationErrorMessages();
-
 }
 
 //reset hypothesis mean value
@@ -146,6 +166,9 @@ function resetHypothesizedMean()
   hypothesizedMean.value = "";
 }
 
+//expose requestPresets for the testing framework to call
+defineExpose({requestPresets});
+
 </script>
 <template>
 <!-- Main Form -->
@@ -155,19 +178,19 @@ function resetHypothesizedMean()
   </div>
   <div class="sample-size-input input-row">
     <label>Sample Size : </label>
-    <input v-model="sampleSize" class="number-input" type="number" placeholder="Type here"/>
+    <input v-model="sampleSize" class="sample-size number-input" type="number"/>
     <div v-if="showSampleSizeValidationError" class="error-message">Please enter an Integer equal or greater than 2.</div>
     <br>
   </div>
   <div class="sample-mean-input input-row">
     <label>Sample Mean : </label>
-    <input v-model="sampleMean" class="number-input" type="number" placeholder="Type here"/>
+    <input v-model="sampleMean" class="sample-mean number-input" type="number"/>
     <div v-if="showSampleMeanValidationError" class="error-message">Please enter a numerical value.</div>
     <br>
   </div>
   <div class="standard-dev-input input-row">
     <label>Standard Deviation : </label>
-    <input v-model="standardDev" class="number-input" type="number" placeholder="Type here"/>
+    <input v-model="standardDev" class="standard-dev number-input" type="number"/>
     <p v-if="showStandardDevValidationError" class="error-message">Please enter a numerical value greater than 0.</p>
     <br>
   </div>
@@ -176,14 +199,14 @@ function resetHypothesizedMean()
     <label for="hypothesis-test" class="hyopthesis-label">Perform Hypothesis test</label>
     <div class="hypothesized-mean">
       <label class="hypo-mean-label">Hypothesized Mean : </label>
-      <input v-model="hypothesizedMean" class="number-input" type="number" placeholder="Type here" :disabled="!performHypothesisTest"/>
+      <input v-model="hypothesizedMean" class="hypothesized-mean-input number-input" type="number" :disabled="!performHypothesisTest"/>
       <p v-if="showHypothesizedMeanValidationError" class="error-message">Please enter a numerical value.</p>
       <br>
     </div>
   </div>
-  <div>
-    <button class="ok-button" @click="validate">OK</button>
-    <button class="reset-button" @click="reset">Reset</button>
+  <div class="button-div">
+    <button class="ok-button button" @click="validate">OK</button>
+    <button class="reset-button button" @click="reset">Reset</button>
   </div>
 </div>
 
@@ -204,12 +227,7 @@ function resetHypothesizedMean()
             </div>
           </div>
           <div class="modal-footer">
-            <slot name="footer">
-              <button
-                class="modal-default-button"
-                @click="closeModal"
-              >OK</button>
-            </slot>
+              <button class="modal-default-button button ok-button pop-up-ok-button" @click="closeResultsModal">OK</button>
           </div>
         </div>
       </div>
@@ -218,66 +236,54 @@ function resetHypothesizedMean()
 </template>
 
 <style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
+/* Main App CSS */
 #app {
   display: block;
   width: 500px;
+  position: absolute;
+  top: 5%;
+  left: 5%;
 }
-
 .hyopthesis-label {
   padding-left: 5px;
 }
-
 .hypo-mean-label {
   padding-left: 20%;
 }
 .input-row {
   width: 100%;
+  height: 55px;
   padding-block: 5px;
 }
-
 .number-input {
   float: right;
 }
-
-.ok-button {
-  background-color:blue;
-  color:white;
+.button-div {
+  padding-top: 20px;
+  float:right;
 }
-
+.button {
+  border-radius: 4px;
+  text-align: center;
+  width: 80px;
+  height: 30px;
+}
+.ok-button {
+  background-color:#2865A8;
+  color:white;
+  border: none;
+  
+}
 .reset-button {
+  background-color: white;
+  border-width: 1px;
+  border-color: gray;
+  margin-left: 10px;
 
 }
 .error-message {
   color: red;
-}
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
+  float: right;
 }
 
 /* Personal perference to remove the arrows in the number input boxes */
@@ -286,7 +292,7 @@ input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-/* Firefox */
+/* Firefox css to remove arrows in the number boxes */
 input[type=number] {
   -moz-appearance: textfield;
 }
@@ -303,14 +309,14 @@ input[type=number] {
   display: table;
   transition: opacity 0.3s ease;
 }
-
 .modal-wrapper {
   display: table-cell;
   vertical-align: middle;
 }
 
 .modal-container {
-  width: 300px;
+  width: 350px;
+  height: 175px;
   margin: 0px auto;
   padding: 20px 30px;
   background-color: #fff;
@@ -318,68 +324,12 @@ input[type=number] {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
   transition: all 0.3s ease;
 }
-
-.modal-header h3 {
-  margin-top: 0;
-  color: #42b983;
-}
-
-.modal-body {
-  margin: 20px 0;
-}
-
 .modal-default-button {
   float: right;
+  margin-bottom: 10px;
 }
-
-/*
- * The following styles are auto-applied to elements with
- * transition="modal" when their visibility is toggled
- * by Vue.js.
- *
- * You can easily play with the modal transition by editing
- * these styles.
- */
-
-.modal-enter-from {
-  opacity: 0;
-}
-
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-container,
-.modal-leave-to .modal-container {
-  -webkit-transform: scale(1.1);
-  transform: scale(1.1);
+.modal-footer {
+  padding-block: 10px;;
 }
 /* End Modal */
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
 </style>
