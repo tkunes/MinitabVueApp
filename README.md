@@ -4,7 +4,7 @@
 
 [VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
 
-To test in vscode: [Vitest](https://marketplace.visualstudio.com/items?itemName=ZixuanChen.vitest-explorer)
+To test in VSCode: [Vitest](https://marketplace.visualstudio.com/items?itemName=ZixuanChen.vitest-explorer)
 
 ## Type Support for `.vue` Imports in TS
 
