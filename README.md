@@ -31,9 +31,18 @@ npm run build
 
 ### Run Unit Tests with [Vitest](https://vitest.dev/)
 If the tests are being run through the command line, the vue app must be started. The presets json file is being hosted by vue and will be unreachable if the vue app is not started. 
+
 ```sh
 npm run test:unit
 ```
+
+### Run Unit Tests and Generate Test Coverage Report
+The vue app must be started for the tests to pass. The tests must pass to see the test coverage report.
+
+```sh
+npm run coverage
+```
+
 
 ### Lint with [ESLint](https://eslint.org/)
 
