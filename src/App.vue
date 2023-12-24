@@ -46,7 +46,7 @@ async function requestPresets()
   //Mock AJAX call using the axios library 
   try
   {
-    let response = await axios.get('http://localhost:5173/src/assets/mock_response.json')
+    let response = await axios.get('http://localhost:5173/mock_response.json')
     
     //load the response data into the form
     loadPresets(response);
@@ -87,7 +87,7 @@ function validate()
   resetValidationErrorMessages();
 
   //Sample Size must be present, be greater than or equal to 2, and must be an integer.
-  if(!sampleSize.value || sampleSize.value <= 2 || typeof sampleSize.value !== 'number' || !Number.isInteger(sampleSize.value))
+  if(!sampleSize.value || sampleSize.value < 2 || typeof sampleSize.value !== 'number' || !Number.isInteger(sampleSize.value))
   {
     validationPassed = false;
     showSampleSizeValidationError.value = true;
@@ -217,11 +217,11 @@ defineExpose({requestPresets});
         <div class="modal-container">
           <div class="results-table">
             <div>
-              <p class="sample-size-result"> Sample Size : {{ sampleSize }}</p>
-              <p class="sample-mean-result"> Sample Mean : {{ sampleMean }}</p>
-              <p class="standard-dev-result"> Standard Deviation : {{ standardDev }}</p>
-              <div v-if="!performHypothesisTest">Hypothesis Test not enabled</div>
-              <div v-else class="hypothesized-mean-result">
+              <p class="sample-size-result result-text"> Sample Size : {{ sampleSize }}</p>
+              <p class="sample-mean-result result-text"> Sample Mean : {{ sampleMean }}</p>
+              <p class="standard-dev-result result-text"> Standard Deviation : {{ standardDev }}</p>
+              <div v-if="!performHypothesisTest" class="result-text">Hypothesis Test not enabled</div>
+              <div v-else class="hypothesized-mean-result result-text">
                 <p>Hypothesized Mean : {{ hypothesizedMean }}</p>
               </div>
             </div>
@@ -330,6 +330,9 @@ input[type=number] {
 }
 .modal-footer {
   padding-block: 10px;;
+}
+.result-text {
+  color:black;
 }
 /* End Modal */
 </style>
