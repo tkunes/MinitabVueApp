@@ -53,22 +53,31 @@ async function requestPresets()
   }
   catch(e)
   {
-    getPresetsFailure(e);
+    getPresetsFailureHandler(e);
   }
 }
 
 //Set form values equal to presets if present
 function loadPresets(response: {data:{sample_size?:number, sample_mean?:number, standard_deviation?:number}})
 {
+
+  //we're expecting data to be an object, if its not, we can't load anything into the form 
+  if(typeof response != 'object' || typeof response.data != 'object')
+  {
+    getPresetsFailureHandler(response.data);
+    return;
+  }
+
   sampleSize.value = response.data.sample_size || "";
 
   sampleMean.value = response.data.sample_mean || "";
 
   standardDev.value = response.data.standard_deviation || "";
+  return;
 }
 
 //error handler for requesting presets
-function getPresetsFailure(e:any)
+function getPresetsFailureHandler(e:any)
 {
   //log the error
   console.log(e);
@@ -130,6 +139,7 @@ function resetValidationErrorMessages()
   showSampleMeanValidationError.value       = false;
   showStandardDevValidationError.value      = false;
   showHypothesizedMeanValidationError.value = false;
+  showPresetsError.value                    = false;
 }
 //Submit function that enabled the results modal window
 function submit()
@@ -166,14 +176,14 @@ function resetHypothesizedMean()
   hypothesizedMean.value = "";
 }
 
-//expose requestPresets for the testing framework to call
-defineExpose({requestPresets});
+//expose functions for the testing framework to call
+defineExpose({requestPresets, loadPresets, getPresetsFailureHandler});
 
 </script>
 <template>
 <!-- Main Form -->
 <div id="app">
-  <div v-if="showPresetsError" class="presets-error-message">
+  <div v-if="showPresetsError" class="presets-error-message error-message">
     <p>Error Retrieving Presets from Server </p>
   </div>
   <div class="sample-size-input input-row">

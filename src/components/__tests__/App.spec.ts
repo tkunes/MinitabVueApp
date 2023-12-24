@@ -1,14 +1,19 @@
 import { mount } from '@vue/test-utils'
-import { it, expect } from 'vitest'
+import { it, expect, beforeEach } from 'vitest'
 import App from '../../App.vue';
 
 //Mount the app to the DOM
 const wrapper = mount(App);
 
+beforeEach(async() =>
+{
+    //reset the form to make sure there are no unexpected value or states
+    await wrapper.get('.reset-button').trigger('click');
+});
+
 //Test the request presets functionality
 it('Request Presets Validation', async() => 
 {
-
     //call the request presets function to set the form values to test
     await wrapper.vm.requestPresets();
 
@@ -21,9 +26,30 @@ it('Request Presets Validation', async() =>
     expect(sampleSizeInputElement.value).toBe('10');
     expect(sampleMeanInputElement.value).toBe('2.5');
     expect(standardDevInputElement.value).toBe('0.1');
+});
+
+it('Request Presets Failure Message Validation', async() =>
+{
+    //test the function directly
+    await wrapper.vm.getPresetsFailureHandler('Request Presets Failure Message Unit Test');
+
+    //verify that the error message shows up
+    expect(wrapper.text()).toContain('Error Retrieving Presets from Server');
 
     //reset the form
     await wrapper.get('.reset-button').trigger('click');
+
+    //verify that the form is reset. this will also test that the reset button works
+    expect(wrapper.text()).not.toContain('Error Retrieving Presets from Server');
+
+    //create an invalid response object to try to load into the form, the error handler should be called
+    //and the error message shown.
+    const fakeResponse = {data:'Test string'};
+
+    await wrapper.vm.loadPresets(fakeResponse);
+
+     //verify that the error message shows up
+     expect(wrapper.text()).toContain('Error Retrieving Presets from Server');
 });
 
 //Test to make sure that the results pop up appears in the DOM with the appropriate values
@@ -44,9 +70,6 @@ it('Results Popup Validation', async() =>
     //click the ok button
     //dismiss the popup
     await wrapper.get('.pop-up-ok-button').trigger('click');
-
-    //reset the form
-    await wrapper.get('.reset-button').trigger('click');
 });
 
 //Test the sample size validation functionality
@@ -113,12 +136,6 @@ it('Sample Size Validation', async() =>
 
     //verify that the error message does NOT show up
     expect(wrapper.text()).not.toContain('Please enter an Integer equal or greater than 2.');
-
-    //reset the form
-    await wrapper.get('.reset-button').trigger('click');
-
-    //verify that the form is reset. this will also test that the reset button works
-    expect(wrapper.text()).not.toContain('Please enter an Integer equal or greater than 2.');
 });
 
 //Sample Mean must be:
@@ -167,12 +184,6 @@ it('Sample Mean Validation', async() =>
     await wrapper.get('.ok-button').trigger('click');
 
     //verify that the error message does NOT show up
-    expect(wrapper.text()).not.toContain('Please enter a numerical value.');
-
-    //reset the form
-    await wrapper.get('.reset-button').trigger('click');
-
-    //verify that the form is reset. this will also test that the reset button works
     expect(wrapper.text()).not.toContain('Please enter a numerical value.');
 });
 
@@ -237,12 +248,6 @@ it('Standard Deviation Validation', async() =>
     await wrapper.get('.ok-button').trigger('click');
 
     //verify that the error message does NOT show up
-    expect(wrapper.text()).not.toContain('Please enter a numerical value greater than 0.');
-
-    //reset the form
-    await wrapper.get('.reset-button').trigger('click');
-
-    //verify that the form is reset. also test that the reset button works
     expect(wrapper.text()).not.toContain('Please enter a numerical value greater than 0.');
 });
 
@@ -335,11 +340,5 @@ it('Hypothesized Mean Validation', async() =>
     await wrapper.get('.ok-button').trigger('click');
 
     //verify that the error message does NOT show up
-    expect(wrapper.text()).not.toContain('Please enter a numerical value.');
-
-    //reset the form
-    await wrapper.get('.reset-button').trigger('click');
-
-    //verify that the form is reset.
     expect(wrapper.text()).not.toContain('Please enter a numerical value.');
 });
